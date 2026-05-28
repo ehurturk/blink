@@ -1,94 +1,106 @@
 import { useEffect, useState } from 'react'
-import { createClient } from "@supabase/supabase-js";
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { supabase } from './lib/supabase'
+import { pickActivity } from './lib/suggest'
+import { StrainCheckIn } from './components/StrainCheckIn'
+import { SuggestionCard } from './components/SuggestionCard'
+import { TodayCount } from './components/TodayCount'
+import type {
+  Activity,
+  StrainCheckIn as StrainCheckInValue,
+} from './types'
 import './App.css'
 
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+function startOfTodayISO() {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString()
+}
 
-interface Activity {
-  id: number;
-  name: string;
-  description: string | null;
-  helps_eyes: boolean;
-  helps_neck: boolean;
-  helps_mind: boolean;
-  screen_free: boolean;
-  icon: string | null;
-  created_at: string;
+async function fetchTodayCount() {
+  const { count, error } = await supabase
+    .from('breaks')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', startOfTodayISO())
+  if (error) throw error
+  return count ?? 0
 }
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  // 2. Tell TypeScript that suggestion can be an Activity OR null
+  const [activities, setActivities] = useState<Activity[]>([])
   const [suggestion, setSuggestion] = useState<Activity | null>(null)
+  const [todayCount, setTodayCount] = useState<number | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let ignore = false;
+    let ignore = false
 
-    async function fetchSuggestion() {
-      // 3. (Optional but helpful) Tell Supabase what type of data to expect
-      const { data: candidates, error } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('helps_eyes', true).returns<Activity[]>();
-      if (error) {
-        console.error(error);
-        return;
+    async function loadInitial() {
+      const [activitiesRes, count] = await Promise.all([
+        supabase.from('activities').select('*').returns<Activity[]>(),
+        fetchTodayCount().catch(() => null),
+      ])
+      if (ignore) return
+      if (activitiesRes.error) {
+        setError(activitiesRes.error.message)
+        return
       }
-
-      if (!ignore && candidates && candidates.length > 0) {
-        setSuggestion(candidates[Math.floor(Math.random() * candidates.length)]);
-      }
+      setActivities(activitiesRes.data ?? [])
+      if (count !== null) setTodayCount(count)
     }
 
-    fetchSuggestion();
-
+    void loadInitial()
     return () => {
-      ignore = true;
-    };
-  }, []);
+      ignore = true
+    }
+  }, [])
 
+  async function handleSubmit(strain: StrainCheckInValue) {
+    setSubmitting(true)
+    setError(null)
+    const picked = pickActivity(strain, activities)
+    if (!picked) {
+      setError('No activities available yet.')
+      setSubmitting(false)
+      return
+    }
+    const { error: insertErr } = await supabase.from('breaks').insert({
+      eyes_state: strain.eyes,
+      neck_state: strain.neck,
+      mind_state: strain.mind,
+      suggested_activity_id: picked.id,
+    })
+    if (insertErr) {
+      setError(insertErr.message)
+      setSubmitting(false)
+      return
+    }
+    try {
+      setTodayCount(await fetchTodayCount())
+    } catch {
+      // count is non-critical; the insert already landed
+    }
+    setSuggestion(picked)
+    setSubmitting(false)
+  }
+
+  function handleBack() {
+    setSuggestion(null)
+    setError(null)
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>SerGio Nanuk</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-          <p>Suggestion is: {suggestion && (
-            <div className="suggestion-card">
-              <h2>{suggestion.icon} {suggestion.name}</h2>
-              <p>{suggestion.description}</p>
-
-              <div className="tags">
-                {suggestion.helps_eyes && <span>👀 Good for Eyes</span>}
-                {suggestion.helps_neck && <span>🦒 Good for Neck</span>}
-                {suggestion.screen_free && <span>🚫 No Screens</span>}
-              </div>
-            </div>
-          )}</p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <section id="spacer"></section>
-    </>
+    <main className="app">
+      <div className="frame">
+        {suggestion ? (
+          <SuggestionCard activity={suggestion} onBack={handleBack} />
+        ) : (
+          <StrainCheckIn onSubmit={handleSubmit} disabled={submitting} />
+        )}
+        <TodayCount count={todayCount} />
+        {error && <p className="error">{error}</p>}
+      </div>
+    </main>
   )
 }
 
