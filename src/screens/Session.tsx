@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { SessionRing } from '../components/SessionRing'
+import { ConfirmModal } from '../components/ConfirmModal'
 import { HiddenOverlay } from '../components/HiddenOverlay'
+import { SessionRing } from '../components/SessionRing'
 
 function formatMmSs(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -11,12 +12,29 @@ function formatMmSs(ms: number) {
   return `${mm}:${ss.toString().padStart(2, '0')}`
 }
 
+type PendingFlag = 'eyes' | 'neck' | null
+
+const FLAG_COPY: Record<
+  Exclude<PendingFlag, null>,
+  { title: string; body: string }
+> = {
+  eyes: {
+    title: 'Eyes feeling tired?',
+    body: "We'll factor that into your next break suggestion.",
+  },
+  neck: {
+    title: 'Neck feeling tight?',
+    body: "We'll factor that into your next break suggestion.",
+  },
+}
+
 export function Session() {
   const navigate = useNavigate()
   const { plannedStudyMs, strainFlags, toggleStrainFlag } = useApp()
   const [elapsedMs, setElapsedMs] = useState(0)
   const [paused, setPaused] = useState(false)
   const [hidden, setHidden] = useState(false)
+  const [pendingFlag, setPendingFlag] = useState<PendingFlag>(null)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
 
   useEffect(() => {
@@ -32,6 +50,26 @@ export function Session() {
   }, [elapsedMs, plannedStudyMs, navigate])
 
   const progress = Math.min(1, elapsedMs / plannedStudyMs)
+  const copy = pendingFlag ? FLAG_COPY[pendingFlag] : null
+
+  function handleFlagTap(dim: 'eyes' | 'neck') {
+    if (strainFlags[dim]) {
+      toggleStrainFlag(dim)
+      return
+    }
+    setPendingFlag(dim)
+  }
+
+  function confirmBreak() {
+    if (pendingFlag) toggleStrainFlag(pendingFlag)
+    setPendingFlag(null)
+    navigate('/break/check-in')
+  }
+
+  function confirmNote() {
+    if (pendingFlag) toggleStrainFlag(pendingFlag)
+    setPendingFlag(null)
+  }
 
   return (
     <div className={`screen session-screen${hidden ? ' is-hidden' : ''}`}>
@@ -39,14 +77,14 @@ export function Session() {
         <button
           type="button"
           className={`flag-chip${strainFlags.eyes ? ' is-on' : ''}`}
-          onClick={() => toggleStrainFlag('eyes')}
+          onClick={() => handleFlagTap('eyes')}
         >
           My eyes hurt
         </button>
         <button
           type="button"
           className={`flag-chip${strainFlags.neck ? ' is-on' : ''}`}
-          onClick={() => toggleStrainFlag('neck')}
+          onClick={() => handleFlagTap('neck')}
         >
           My neck hurts
         </button>
@@ -55,9 +93,7 @@ export function Session() {
       <div className="ring-wrap session-ring-wrap">
         <SessionRing progress={progress}>
           <span className="ring-total mono">{formatMmSs(elapsedMs)}</span>
-          <span className="ring-sub">
-            of {formatMmSs(plannedStudyMs)}
-          </span>
+          <span className="ring-sub">of {formatMmSs(plannedStudyMs)}</span>
         </SessionRing>
       </div>
 
@@ -88,39 +124,27 @@ export function Session() {
 
       <HiddenOverlay active={hidden} onReveal={() => setHidden(false)} />
 
-      {showEndConfirm && (
-        <div
-          className="confirm-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="end-session-title"
-        >
-          <div className="confirm-dialog">
-            <h2 id="end-session-title" className="confirm-title">
-              End session?
-            </h2>
-            <p className="confirm-copy">
-              Are you sure you want to end this session now?
-            </p>
-            <div className="confirm-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setShowEndConfirm(false)}
-              >
-                Keep going
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => navigate('/break/check-in')}
-              >
-                End session
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={showEndConfirm}
+        title="End session?"
+        body="Are you sure you want to end this session now?"
+        primaryLabel="End session"
+        secondaryLabel="Keep going"
+        onPrimary={() => navigate('/break/check-in')}
+        onSecondary={() => setShowEndConfirm(false)}
+        onDismiss={() => setShowEndConfirm(false)}
+      />
+
+      <ConfirmModal
+        open={!!copy}
+        title={copy?.title ?? ''}
+        body={copy?.body}
+        primaryLabel="Take break now"
+        secondaryLabel="Just note it"
+        onPrimary={confirmBreak}
+        onSecondary={confirmNote}
+        onDismiss={() => setPendingFlag(null)}
+      />
     </div>
   )
 }
