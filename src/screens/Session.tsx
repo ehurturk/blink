@@ -36,7 +36,6 @@ export function Session() {
     strainFlags,
     toggleStrainFlag,
     setCheckIn,
-    resetFlow,
   } = useApp()
   const [elapsedMs, setElapsedMs] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -93,9 +92,8 @@ export function Session() {
   }
 
   function endSession() {
-    resetFlow()
     setShowEndConfirm(false)
-    navigate('/', { replace: true })
+    skipBreakCheckIn()
   }
 
   return (
