@@ -31,7 +31,13 @@ const FLAG_COPY: Record<
 
 export function Session() {
   const navigate = useNavigate()
-  const { plannedStudyMs, strainFlags, toggleStrainFlag, setCheckIn } = useApp()
+  const {
+    plannedStudyMs,
+    strainFlags,
+    toggleStrainFlag,
+    setCheckIn,
+    resetFlow,
+  } = useApp()
   const [elapsedMs, setElapsedMs] = useState(0)
   const [paused, setPaused] = useState(false)
   const [hidden, setHidden] = useState(false)
@@ -84,6 +90,12 @@ export function Session() {
   function confirmNote() {
     if (pendingFlag) toggleStrainFlag(pendingFlag)
     setPendingFlag(null)
+  }
+
+  function endSession() {
+    resetFlow()
+    setShowEndConfirm(false)
+    navigate('/', { replace: true })
   }
 
   return (
@@ -144,7 +156,7 @@ export function Session() {
         body="Are you sure you want to end this session now?"
         primaryLabel="End session"
         secondaryLabel="Keep going"
-        onPrimary={() => skipBreakCheckIn()}
+        onPrimary={endSession}
         onSecondary={() => setShowEndConfirm(false)}
         onDismiss={() => setShowEndConfirm(false)}
       />
