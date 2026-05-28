@@ -1,15 +1,17 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { topActivities } from '../lib/suggest'
 import { rationaleFor } from '../lib/visual'
 import { ActivityHero } from '../components/ActivityHero'
 import { ActivityTile } from '../components/ActivityTile'
+import { ConfirmModal } from '../components/ConfirmModal'
 import type { Activity } from '../types'
 
 export function BreakPick() {
   const navigate = useNavigate()
-  const { activities, user, checkIn, setChosenActivity } = useApp()
+  const { activities, user, checkIn, setChosenActivity, resetFlow } = useApp()
+  const [showEndDayConfirm, setShowEndDayConfirm] = useState(false)
 
   const ranked = useMemo(() => {
     if (!checkIn || activities.length === 0) return []
@@ -42,6 +44,11 @@ export function BreakPick() {
   function pick(a: Activity) {
     setChosenActivity(a)
     navigate('/break/active')
+  }
+
+  function endDay() {
+    resetFlow()
+    navigate('/', { replace: true })
   }
 
   if (!checkIn) {
@@ -82,6 +89,27 @@ export function BreakPick() {
           </div>
         </section>
       )}
+
+      <div className="actions">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => setShowEndDayConfirm(true)}
+        >
+          Stop for today
+        </button>
+      </div>
+
+      <ConfirmModal
+        open={showEndDayConfirm}
+        title="Stop working for today?"
+        body="This will end the current flow and take you back home."
+        primaryLabel="Stop for today"
+        secondaryLabel="Keep going"
+        onPrimary={endDay}
+        onSecondary={() => setShowEndDayConfirm(false)}
+        onDismiss={() => setShowEndDayConfirm(false)}
+      />
     </div>
   )
 }

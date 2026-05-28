@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { strainFlagsToCheckIn, useApp } from '../context/AppContext'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { HiddenOverlay } from '../components/HiddenOverlay'
 import { SessionRing } from '../components/SessionRing'
+import type { StrainCheckIn } from '../types'
 
 function formatMmSs(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -30,7 +31,7 @@ const FLAG_COPY: Record<
 
 export function Session() {
   const navigate = useNavigate()
-  const { plannedStudyMs, strainFlags, toggleStrainFlag } = useApp()
+  const { plannedStudyMs, strainFlags, toggleStrainFlag, setCheckIn } = useApp()
   const [elapsedMs, setElapsedMs] = useState(0)
   const [paused, setPaused] = useState(false)
   const [hidden, setHidden] = useState(false)
@@ -43,12 +44,6 @@ export function Session() {
     return () => clearInterval(id)
   }, [paused])
 
-  useEffect(() => {
-    if (elapsedMs >= plannedStudyMs) {
-      navigate('/break/check-in', { replace: true })
-    }
-  }, [elapsedMs, plannedStudyMs, navigate])
-
   const progress = Math.min(1, elapsedMs / plannedStudyMs)
   const copy = pendingFlag ? FLAG_COPY[pendingFlag] : null
 
@@ -60,10 +55,30 @@ export function Session() {
     setPendingFlag(dim)
   }
 
+  const skipBreakCheckIn = useCallback(
+    (replace = false) => {
+      const partial = strainFlagsToCheckIn(strainFlags)
+      const nextCheckIn: StrainCheckIn = {
+        eyes: partial.eyes ?? 'good',
+        neck: partial.neck ?? 'good',
+        mind: 'good',
+      }
+      setCheckIn(nextCheckIn)
+      navigate('/break/pick', replace ? { replace: true } : undefined)
+    },
+    [navigate, setCheckIn, strainFlags],
+  )
+
+  useEffect(() => {
+    if (elapsedMs >= plannedStudyMs) {
+      skipBreakCheckIn(true)
+    }
+  }, [elapsedMs, plannedStudyMs, skipBreakCheckIn])
+
   function confirmBreak() {
     if (pendingFlag) toggleStrainFlag(pendingFlag)
     setPendingFlag(null)
-    navigate('/break/check-in')
+    skipBreakCheckIn()
   }
 
   function confirmNote() {
@@ -93,7 +108,6 @@ export function Session() {
       <div className="ring-wrap session-ring-wrap">
         <SessionRing progress={progress}>
           <span className="ring-total mono">{formatMmSs(elapsedMs)}</span>
-          <span className="ring-sub">of {formatMmSs(plannedStudyMs)}</span>
         </SessionRing>
       </div>
 
@@ -130,7 +144,7 @@ export function Session() {
         body="Are you sure you want to end this session now?"
         primaryLabel="End session"
         secondaryLabel="Keep going"
-        onPrimary={() => navigate('/break/check-in')}
+        onPrimary={() => skipBreakCheckIn()}
         onSecondary={() => setShowEndConfirm(false)}
         onDismiss={() => setShowEndConfirm(false)}
       />
