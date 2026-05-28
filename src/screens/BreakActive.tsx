@@ -35,10 +35,6 @@ export function BreakActive() {
   const [remainingMs, setRemainingMs] = useState(durationMs)
 
   useEffect(() => {
-    setRemainingMs(durationMs)
-  }, [durationMs])
-
-  useEffect(() => {
     if (!chosenActivity) {
       navigate('/session', { replace: true })
     }
