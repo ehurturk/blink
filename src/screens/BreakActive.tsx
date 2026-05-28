@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 
 export function BreakActive() {
   const navigate = useNavigate()
-  const { chosenActivity } = useApp()
+  const { chosenActivity, beginSession } = useApp()
 
   if (!chosenActivity) {
     navigate('/break/pick', { replace: true })
@@ -34,7 +34,10 @@ export function BreakActive() {
       <button
         type="button"
         className="btn-primary"
-        onClick={() => navigate('/break/outcome')}
+        onClick={() => {
+          beginSession()
+          navigate('/session', { replace: true })
+        }}
       >
         I'm back
       </button>
