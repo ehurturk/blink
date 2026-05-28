@@ -24,7 +24,9 @@ type AppContextValue = {
   activities: Activity[]
   activitiesError: string | null
   plannedStudyMs: number
+  plannedBreakMs: number
   setPlannedStudy: (ms: number) => void
+  setPlannedBreak: (ms: number) => void
   strainFlags: SessionStrainFlags
   toggleStrainFlag: (dim: 'eyes' | 'neck') => void
   checkIn: StrainCheckIn | null
@@ -48,11 +50,13 @@ type AppContextValue = {
 const AppContext = createContext<AppContextValue | null>(null)
 
 const DEFAULT_STUDY_MS = 25 * 60 * 1000
+const DEFAULT_BREAK_MS = 5 * 60 * 1000
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [activitiesError, setActivitiesError] = useState<string | null>(null)
   const [plannedStudyMs, setPlannedStudyMs] = useState(DEFAULT_STUDY_MS)
+  const [plannedBreakMs, setPlannedBreakMs] = useState(DEFAULT_BREAK_MS)
   const [strainFlags, setStrainFlags] = useState<SessionStrainFlags>({
     eyes: false,
     neck: false,
@@ -183,7 +187,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activities,
       activitiesError,
       plannedStudyMs,
+      plannedBreakMs,
       setPlannedStudy: setPlannedStudyMs,
+      setPlannedBreak: setPlannedBreakMs,
       strainFlags,
       toggleStrainFlag,
       checkIn,
@@ -206,6 +212,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activities,
       activitiesError,
       plannedStudyMs,
+      plannedBreakMs,
       strainFlags,
       toggleStrainFlag,
       checkIn,
