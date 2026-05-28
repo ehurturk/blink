@@ -1,35 +1,43 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { topActivities } from '../lib/suggest'
-import { ActivityCard } from '../components/ActivityCard'
+import { rationaleFor } from '../lib/visual'
+import { ActivityHero } from '../components/ActivityHero'
+import { ActivityTile } from '../components/ActivityTile'
 import type { Activity } from '../types'
-
-function byIds(activities: Activity[], ids: number[]): Activity[] {
-  return ids
-    .map((id) => activities.find((a) => a.id === id))
-    .filter((a): a is Activity => Boolean(a))
-}
 
 export function BreakPick() {
   const navigate = useNavigate()
   const { activities, user, checkIn, setChosenActivity } = useApp()
-  const [wish, setWish] = useState('')
 
-  const recommended = useMemo(() => {
+  const ranked = useMemo(() => {
     if (!checkIn || activities.length === 0) return []
-    return topActivities(checkIn, activities, 3)
+    return topActivities(checkIn, activities, activities.length)
   }, [checkIn, activities])
 
-  const favorites = useMemo(
-    () => byIds(activities, user.favoriteActivityIds),
-    [activities, user.favoriteActivityIds],
-  )
+  const hero: Activity | null = ranked[0] ?? null
 
-  const somethingNew = useMemo(
-    () => byIds(activities, user.somethingNewIds),
-    [activities, user.somethingNewIds],
-  )
+  const others = useMemo(() => {
+    if (!hero) return []
+    const seen = new Set<number>([hero.id])
+    const picks: Activity[] = []
+    const push = (a: Activity | undefined) => {
+      if (a && !seen.has(a.id)) {
+        seen.add(a.id)
+        picks.push(a)
+      }
+    }
+    // Next-best recommendations first, then favorites, then "something new".
+    ranked.slice(1, 4).forEach(push)
+    user.favoriteActivityIds.forEach((id) =>
+      push(activities.find((a) => a.id === id)),
+    )
+    user.somethingNewIds.forEach((id) =>
+      push(activities.find((a) => a.id === id)),
+    )
+    return picks
+  }, [hero, ranked, activities, user.favoriteActivityIds, user.somethingNewIds])
 
   function pick(a: Activity) {
     setChosenActivity(a)
@@ -37,58 +45,39 @@ export function BreakPick() {
   }
 
   if (!checkIn) {
-    // Defensive — shouldn't happen via the normal flow.
     navigate('/break/check-in', { replace: true })
     return null
+  }
+
+  if (!hero) {
+    return (
+      <div className="screen">
+        <header className="page-head">
+          <h1>Finding ideas…</h1>
+        </header>
+      </div>
+    )
   }
 
   return (
     <div className="screen">
       <header className="page-head">
-        <p className="eyebrow">Pick a break</p>
-        <h1>What would you like to do?</h1>
+        <p className="eyebrow">Right now</p>
+        <h1>How about this?</h1>
       </header>
 
-      {recommended.length > 0 && (
-        <section className="pick-section">
-          <h2 className="section-title">Recommended</h2>
-          <div className="activity-grid">
-            {recommended.map((a) => (
-              <ActivityCard key={a.id} activity={a} onSelect={pick} />
-            ))}
-          </div>
-        </section>
-      )}
+      <ActivityHero
+        activity={hero}
+        rationale={rationaleFor(checkIn, hero)}
+        onSelect={pick}
+      />
 
-      {favorites.length > 0 && (
-        <section className="pick-section">
-          <h2 className="section-title">Favorites</h2>
-          <div className="activity-grid">
-            {favorites.map((a) => (
-              <ActivityCard key={a.id} activity={a} onSelect={pick} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="pick-section">
-        <h2 className="section-title">Something on your mind?</h2>
-        <textarea
-          className="wish-input"
-          rows={2}
-          placeholder="Give me a suggestion and I'll do my best."
-          value={wish}
-          onChange={(e) => setWish(e.target.value)}
-        />
-        <p className="subtle hint">Coming soon — for now, pick a card above.</p>
-      </section>
-
-      {somethingNew.length > 0 && (
-        <section className="pick-section">
-          <h2 className="section-title">Something new</h2>
-          <div className="activity-grid">
-            {somethingNew.map((a) => (
-              <ActivityCard key={a.id} activity={a} onSelect={pick} />
+      {others.length > 0 && (
+        <section className="tile-section">
+          <h2 className="section-title">Or try one of these</h2>
+          <div className="tile-scroller">
+            {others.map((a) => (
+              <ActivityTile key={a.id} activity={a} onSelect={pick} />
             ))}
           </div>
         </section>

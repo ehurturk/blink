@@ -18,10 +18,10 @@ const DIMENSIONS: { key: StrainDimension; label: string }[] = [
   { key: 'mind', label: 'Mind' },
 ]
 
-const STATES: { key: StrainState; label: string }[] = [
-  { key: 'good', label: 'Good' },
-  { key: 'meh', label: 'Meh' },
-  { key: 'sore', label: 'Sore' },
+const STATES: { key: StrainState; label: string; emoji: string }[] = [
+  { key: 'good', label: 'Good', emoji: '🙂' },
+  { key: 'meh', label: 'Meh', emoji: '😐' },
+  { key: 'sore', label: 'Sore', emoji: '😣' },
 ]
 
 export function StrainCheckIn({
@@ -40,10 +40,10 @@ export function StrainCheckIn({
   return (
     <div className="strain">
       {DIMENSIONS.map(({ key, label }) => (
-        <fieldset key={key} className="strain-row">
-          <legend className="strain-label">{label}</legend>
-          <div className="strain-options" role="radiogroup" aria-label={label}>
-            {STATES.map(({ key: s, label: sLabel }) => {
+        <fieldset key={key} className="feeling-row">
+          <legend className="feeling-label">{label}</legend>
+          <div className="feeling-options" role="radiogroup" aria-label={label}>
+            {STATES.map(({ key: s, label: sLabel, emoji }) => {
               const selected = draft[key] === s
               return (
                 <button
@@ -51,10 +51,13 @@ export function StrainCheckIn({
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  className={`strain-pill is-${s}${selected ? ' is-selected' : ''}`}
+                  className={`feeling-card is-${s}${selected ? ' is-selected' : ''}`}
                   onClick={() => setDraft((d) => ({ ...d, [key]: s }))}
                 >
-                  {sLabel}
+                  <span className="feeling-emoji" aria-hidden="true">
+                    {emoji}
+                  </span>
+                  <span className="feeling-name">{sLabel}</span>
                 </button>
               )
             })}
