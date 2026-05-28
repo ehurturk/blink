@@ -12,24 +12,35 @@ function App() {
   const [suggestion, setSuggestion] = useState(null)
 
   useEffect(() => {
-    getSuggestion();
-  }, []);
+    // Flag to prevent state updates if the component unmounts before the fetch finishes
+    let ignore = false;
 
-  async function getSuggestion() {
-    const { data: candidates, error } = await supabase
-      .from('activities')
-      .select('*')
-      .eq('helps_eyes', true);
+    async function fetchSuggestion() {
+      const { data: candidates, error } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('helps_eyes', true);
 
-    if (error) {
-      console.error(error);
-      return;
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      // Only update state if the component is still mounted
+      if (!ignore) {
+        setSuggestion(candidates[Math.floor(Math.random() * candidates.length)]);
+      }
     }
 
-    setSuggestion(candidates[Math.floor(Math.random() * candidates.length)]);
+    fetchSuggestion();
+
+    // Cleanup function
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
 
-  }
   return (
     <>
       <section id="center">
