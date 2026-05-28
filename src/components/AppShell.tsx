@@ -1,21 +1,11 @@
 import { Outlet } from 'react-router-dom'
-import { BottomNav } from './BottomNav'
+import { TopBar } from './TopBar'
 
 export function AppShell() {
   return (
     <div className="app">
-      <div className="frame frame-with-nav">
-        <Outlet />
-      </div>
-      <BottomNav />
-    </div>
-  )
-}
-
-export function FocusShell() {
-  return (
-    <div className="app">
       <div className="frame">
+        <TopBar />
         <Outlet />
       </div>
     </div>

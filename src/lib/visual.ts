@@ -3,17 +3,17 @@ import type { Activity, StrainCheckIn } from '../types'
 type Stops = readonly [string, string]
 
 const GRADIENTS: Record<string, Stops> = {
-  'Eye exercises': ['#CFE3F1', '#8FB6CC'],
-  'Look out a window': ['#D6E7F0', '#7FA8C2'],
-  'Neck stretches': ['#E5DAEC', '#A693C0'],
-  'Short walk': ['#D3E1CA', '#7FA579'],
-  'Grab a coffee': ['#EFE0CB', '#C5A77F'],
-  'Call a friend': ['#F2D7D5', '#DA9E97'],
-  Meditation: ['#D7D2EA', '#897FA6'],
-  'Power nap': ['#C9CEE0', '#6E789B'],
+  'Eye exercises': ['#DCEAF3', '#A6C7DC'],
+  'Look out a window': ['#DEEEDA', '#9CC1A1'],
+  'Neck stretches': ['#E5DCEE', '#B49EC9'],
+  'Short walk': ['#DDE9CB', '#A0BD7E'],
+  'Grab a coffee': ['#F1E1C5', '#D0AC78'],
+  'Call a friend': ['#F3D7D2', '#D89C95'],
+  Meditation: ['#DCD4EC', '#9C8CB8'],
+  'Power nap': ['#CFD5E4', '#8995AE'],
 }
 
-const FALLBACK: Stops = ['#E8E2D6', '#B9B0A0']
+const FALLBACK: Stops = ['#EADFCB', '#C3B49A']
 
 export function gradientFor(activityName: string): string {
   const [a, b] = GRADIENTS[activityName] ?? FALLBACK

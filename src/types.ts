@@ -24,6 +24,8 @@ export type Break = {
   suggested_activity_id: number | null
   did_activity: boolean | null
   helped: boolean | null
+  study_seconds: number | null
+  break_seconds: number | null
   created_at: string
 }
 

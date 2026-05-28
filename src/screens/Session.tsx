@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { strainFlagsToCheckIn, useApp } from '../context/AppContext'
-import { ConfirmModal } from '../components/ConfirmModal'
-import { HiddenOverlay } from '../components/HiddenOverlay'
+import { useApp } from '../context/AppContext'
 import { SessionRing } from '../components/SessionRing'
-import type { StrainCheckIn } from '../types'
+import { HiddenOverlay } from '../components/HiddenOverlay'
+import { ConfirmModal } from '../components/ConfirmModal'
 
 function formatMmSs(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000))
@@ -35,55 +34,74 @@ export function Session() {
     plannedStudyMs,
     strainFlags,
     toggleStrainFlag,
-    setCheckIn,
+    sessionStartedAt,
+    sessionPausedAt,
+    sessionTotalPausedMs,
+    togglePause,
+    captureStudyElapsed,
   } = useApp()
   const [elapsedMs, setElapsedMs] = useState(0)
-  const [paused, setPaused] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [pendingFlag, setPendingFlag] = useState<PendingFlag>(null)
-  const [showEndConfirm, setShowEndConfirm] = useState(false)
+  const [pendingManualBreak, setPendingManualBreak] = useState(false)
 
+  const paused = sessionPausedAt !== null
+
+  // If somebody lands here without an active session (URL nav, refresh), bail home.
   useEffect(() => {
-    if (paused) return
-    const id = setInterval(() => setElapsedMs((e) => e + 1000), 1000)
+    if (sessionStartedAt === null) {
+      navigate('/', { replace: true })
+    }
+  }, [sessionStartedAt, navigate])
+
+  // Drive elapsedMs from persisted timestamps so it survives navigation.
+  useEffect(() => {
+    const startedAt = sessionStartedAt
+    if (startedAt === null) return
+    function update() {
+      const now = Date.now()
+      const pauseAdjustment =
+        sessionTotalPausedMs +
+        (sessionPausedAt !== null ? now - sessionPausedAt : 0)
+      setElapsedMs(now - startedAt! - pauseAdjustment)
+    }
+    update()
+    if (sessionPausedAt !== null) return
+    const id = setInterval(update, 1000)
     return () => clearInterval(id)
-  }, [paused])
+  }, [sessionStartedAt, sessionPausedAt, sessionTotalPausedMs])
+
+  // Auto-advance to break check-in when the timer is up.
+  useEffect(() => {
+    if (sessionStartedAt !== null && elapsedMs >= plannedStudyMs) {
+      captureStudyElapsed()
+      navigate('/break/check-in', { replace: true })
+    }
+  }, [
+    elapsedMs,
+    plannedStudyMs,
+    navigate,
+    sessionStartedAt,
+    captureStudyElapsed,
+  ])
+
+  if (sessionStartedAt === null) return null
 
   const progress = Math.min(1, elapsedMs / plannedStudyMs)
-  const copy = pendingFlag ? FLAG_COPY[pendingFlag] : null
 
   function handleFlagTap(dim: 'eyes' | 'neck') {
     if (strainFlags[dim]) {
-      toggleStrainFlag(dim)
-      return
+      toggleStrainFlag(dim) // already flagged → clear instantly
+    } else {
+      setPendingFlag(dim)
     }
-    setPendingFlag(dim)
   }
-
-  const skipBreakCheckIn = useCallback(
-    (replace = false) => {
-      const partial = strainFlagsToCheckIn(strainFlags)
-      const nextCheckIn: StrainCheckIn = {
-        eyes: partial.eyes ?? 'good',
-        neck: partial.neck ?? 'good',
-        mind: 'good',
-      }
-      setCheckIn(nextCheckIn)
-      navigate('/break/pick', replace ? { replace: true } : undefined)
-    },
-    [navigate, setCheckIn, strainFlags],
-  )
-
-  useEffect(() => {
-    if (elapsedMs >= plannedStudyMs) {
-      skipBreakCheckIn(true)
-    }
-  }, [elapsedMs, plannedStudyMs, skipBreakCheckIn])
 
   function confirmBreak() {
     if (pendingFlag) toggleStrainFlag(pendingFlag)
     setPendingFlag(null)
-    skipBreakCheckIn()
+    captureStudyElapsed()
+    navigate('/break/check-in')
   }
 
   function confirmNote() {
@@ -91,10 +109,13 @@ export function Session() {
     setPendingFlag(null)
   }
 
-  function endSession() {
-    setShowEndConfirm(false)
-    skipBreakCheckIn()
+  function confirmManualBreak() {
+    setPendingManualBreak(false)
+    captureStudyElapsed()
+    navigate('/break/check-in')
   }
+
+  const copy = pendingFlag ? FLAG_COPY[pendingFlag] : null
 
   return (
     <div className={`screen session-screen${hidden ? ' is-hidden' : ''}`}>
@@ -118,6 +139,7 @@ export function Session() {
       <div className="ring-wrap session-ring-wrap">
         <SessionRing progress={progress}>
           <span className="ring-total mono">{formatMmSs(elapsedMs)}</span>
+          <span className="ring-sub">of {formatMmSs(plannedStudyMs)}</span>
         </SessionRing>
       </div>
 
@@ -125,14 +147,14 @@ export function Session() {
         <button
           type="button"
           className="round-btn round-btn-warn"
-          onClick={() => setShowEndConfirm(true)}
+          onClick={() => setPendingManualBreak(true)}
         >
-          End Session
+          Break now
         </button>
         <button
           type="button"
           className="round-btn round-btn-soft"
-          onClick={() => setPaused((p) => !p)}
+          onClick={togglePause}
         >
           {paused ? 'Resume' : 'Pause'}
         </button>
@@ -140,7 +162,7 @@ export function Session() {
 
       <button
         type="button"
-        className="btn-secondary btn-hide"
+        className="btn-primary"
         onClick={() => setHidden(true)}
       >
         Hide
@@ -149,25 +171,25 @@ export function Session() {
       <HiddenOverlay active={hidden} onReveal={() => setHidden(false)} />
 
       <ConfirmModal
-        open={showEndConfirm}
-        title="End session?"
-        body="Are you sure you want to end this session now?"
-        primaryLabel="End session"
-        secondaryLabel="Keep going"
-        onPrimary={endSession}
-        onSecondary={() => setShowEndConfirm(false)}
-        onDismiss={() => setShowEndConfirm(false)}
-      />
-
-      <ConfirmModal
-        open={!!copy}
+        open={pendingFlag !== null}
         title={copy?.title ?? ''}
         body={copy?.body}
-        primaryLabel="Take break now"
+        primaryLabel="Break now"
         secondaryLabel="Just note it"
         onPrimary={confirmBreak}
         onSecondary={confirmNote}
         onDismiss={() => setPendingFlag(null)}
+      />
+
+      <ConfirmModal
+        open={pendingManualBreak}
+        title="Take a break?"
+        body="We'll end this study session here and find you something to do."
+        primaryLabel="Yes, break now"
+        secondaryLabel="Keep studying"
+        onPrimary={confirmManualBreak}
+        onSecondary={() => setPendingManualBreak(false)}
+        onDismiss={() => setPendingManualBreak(false)}
       />
     </div>
   )

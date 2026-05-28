@@ -1,23 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SessionRing } from '../components/SessionRing'
 import { useApp } from '../context/AppContext'
+import { gradientFor } from '../lib/visual'
 
-const DEFAULT_BREAK_MS = 5 * 60 * 1000
-
-const BREAK_DURATIONS_MS: Record<string, number> = {
-  'Eye exercises': 3 * 60 * 1000,
-  'Look out a window': 2 * 60 * 1000,
-  'Neck stretches': 4 * 60 * 1000,
-  'Short walk': 8 * 60 * 1000,
-  'Grab a coffee': 7 * 60 * 1000,
-  'Call a friend': 10 * 60 * 1000,
-  Meditation: 6 * 60 * 1000,
-  'Power nap': 15 * 60 * 1000,
-}
-
-function formatMmSs(ms: number) {
-  const s = Math.max(0, Math.ceil(ms / 1000))
+function formatMmSs(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds))
   const mm = Math.floor(s / 60)
   const ss = s % 60
   return `${mm}:${ss.toString().padStart(2, '0')}`
@@ -25,77 +12,82 @@ function formatMmSs(ms: number) {
 
 export function BreakActive() {
   const navigate = useNavigate()
-  const { chosenActivity, beginSession } = useApp()
-
-  const durationMs = useMemo(() => {
-    if (!chosenActivity) return DEFAULT_BREAK_MS
-    return BREAK_DURATIONS_MS[chosenActivity.name] ?? DEFAULT_BREAK_MS
-  }, [chosenActivity])
-
-  const [remainingMs, setRemainingMs] = useState(durationMs)
+  const { chosenActivity, breakStartedAt, plannedBreakMs } = useApp()
+  const [elapsedMs, setElapsedMs] = useState(0)
 
   useEffect(() => {
-    if (!chosenActivity) {
-      navigate('/session', { replace: true })
+    const startedAt = breakStartedAt
+    if (startedAt === null) return
+    function update() {
+      setElapsedMs(Date.now() - startedAt!)
     }
-  }, [chosenActivity, navigate])
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [breakStartedAt])
 
-  useEffect(() => {
-    if (remainingMs <= 0) return
-    const id = window.setInterval(() => {
-      setRemainingMs((current) => Math.max(0, current - 1000))
-    }, 1000)
-    return () => window.clearInterval(id)
-  }, [remainingMs])
-
-  if (!chosenActivity) return null
-
-  const progress = durationMs === 0 ? 1 : 1 - remainingMs / durationMs
-  const timerDone = remainingMs === 0
-
-  function continueToSession() {
-    beginSession()
-    navigate('/session', { replace: true })
+  if (!chosenActivity) {
+    navigate('/break/pick', { replace: true })
+    return null
   }
 
+  const activity = chosenActivity
+  const elapsedSeconds = Math.floor(elapsedMs / 1000)
+  const suggestedSeconds = Math.floor(plannedBreakMs / 1000)
+  const targetReached = elapsedSeconds >= suggestedSeconds
+
   return (
-    <div className="screen suggestion">
-      <header className="page-head centered">
+    <div className="screen break-active-screen">
+      <header className="page-head">
         <p className="eyebrow">On break</p>
-        <h1>{chosenActivity.name}</h1>
+        <h1>{activity.name}</h1>
       </header>
 
-      <div className="ring-wrap session-ring-wrap">
-        <SessionRing progress={progress}>
-          <span className="ring-total mono">{formatMmSs(remainingMs)}</span>
-          <span className="ring-sub">
-            {timerDone ? 'Ready when you are' : 'remaining'}
-          </span>
-        </SessionRing>
+      <div
+        className="break-visual"
+        style={{ backgroundImage: gradientFor(activity.name) }}
+      >
+        <span className="break-visual-emoji" aria-hidden="true">
+          {activity.icon ?? '✨'}
+        </span>
       </div>
 
-      {chosenActivity.icon && (
-        <div className="suggestion-icon" aria-hidden="true">
-          {chosenActivity.icon}
-        </div>
+      {activity.description && (
+        <p className="break-desc">{activity.description}</p>
       )}
 
-      {chosenActivity.description && (
-        <p className="suggestion-desc">{chosenActivity.description}</p>
-      )}
+      <div className="break-badges">
+        {activity.helps_eyes && (
+          <span className="break-badge">For your eyes</span>
+        )}
+        {activity.helps_neck && (
+          <span className="break-badge">For your neck</span>
+        )}
+        {activity.helps_mind && (
+          <span className="break-badge">For your mind</span>
+        )}
+        {activity.screen_free && (
+          <span className="break-badge break-badge-accent">Screen-free</span>
+        )}
+      </div>
 
-      <p className="subtle centered">
-        {timerDone
-          ? 'Your break timer is finished. Start the next session when you are ready.'
-          : 'You can finish early whenever you are done.'}
-      </p>
+      <div className="break-timer">
+        <span className="break-timer-value mono">
+          {formatMmSs(elapsedSeconds)}
+        </span>
+        <span className="break-timer-sub">
+          {targetReached
+            ? 'past the suggested time — take your time'
+            : `suggested ${formatMmSs(suggestedSeconds)}`}
+        </span>
+      </div>
 
       <button
         type="button"
         className="btn-primary"
-        onClick={continueToSession}
+        onClick={() => navigate('/break/outcome')}
       >
-        {timerDone ? 'Continue' : "I'm done"}
+        I'm back
       </button>
     </div>
   )
