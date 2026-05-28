@@ -38,10 +38,12 @@ export function Session() {
     sessionPausedAt,
     sessionTotalPausedMs,
     togglePause,
+    captureStudyElapsed,
   } = useApp()
   const [elapsedMs, setElapsedMs] = useState(0)
   const [hidden, setHidden] = useState(false)
   const [pendingFlag, setPendingFlag] = useState<PendingFlag>(null)
+  const [pendingManualBreak, setPendingManualBreak] = useState(false)
 
   const paused = sessionPausedAt !== null
 
@@ -72,9 +74,16 @@ export function Session() {
   // Auto-advance to break check-in when the timer is up.
   useEffect(() => {
     if (sessionStartedAt !== null && elapsedMs >= plannedStudyMs) {
+      captureStudyElapsed()
       navigate('/break/check-in', { replace: true })
     }
-  }, [elapsedMs, plannedStudyMs, navigate, sessionStartedAt])
+  }, [
+    elapsedMs,
+    plannedStudyMs,
+    navigate,
+    sessionStartedAt,
+    captureStudyElapsed,
+  ])
 
   if (sessionStartedAt === null) return null
 
@@ -91,12 +100,19 @@ export function Session() {
   function confirmBreak() {
     if (pendingFlag) toggleStrainFlag(pendingFlag)
     setPendingFlag(null)
+    captureStudyElapsed()
     navigate('/break/check-in')
   }
 
   function confirmNote() {
     if (pendingFlag) toggleStrainFlag(pendingFlag)
     setPendingFlag(null)
+  }
+
+  function confirmManualBreak() {
+    setPendingManualBreak(false)
+    captureStudyElapsed()
+    navigate('/break/check-in')
   }
 
   const copy = pendingFlag ? FLAG_COPY[pendingFlag] : null
@@ -131,7 +147,7 @@ export function Session() {
         <button
           type="button"
           className="round-btn round-btn-warn"
-          onClick={() => navigate('/break/check-in')}
+          onClick={() => setPendingManualBreak(true)}
         >
           Break now
         </button>
@@ -163,6 +179,17 @@ export function Session() {
         onPrimary={confirmBreak}
         onSecondary={confirmNote}
         onDismiss={() => setPendingFlag(null)}
+      />
+
+      <ConfirmModal
+        open={pendingManualBreak}
+        title="Take a break?"
+        body="We'll end this study session here and find you something to do."
+        primaryLabel="Yes, break now"
+        secondaryLabel="Keep studying"
+        onPrimary={confirmManualBreak}
+        onSecondary={() => setPendingManualBreak(false)}
+        onDismiss={() => setPendingManualBreak(false)}
       />
     </div>
   )
