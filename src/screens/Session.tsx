@@ -17,6 +17,7 @@ export function Session() {
   const [elapsedMs, setElapsedMs] = useState(0)
   const [paused, setPaused] = useState(false)
   const [hidden, setHidden] = useState(false)
+  const [showEndConfirm, setShowEndConfirm] = useState(false)
 
   useEffect(() => {
     if (paused) return
@@ -64,9 +65,9 @@ export function Session() {
         <button
           type="button"
           className="round-btn round-btn-warn"
-          onClick={() => navigate('/break/check-in')}
+          onClick={() => setShowEndConfirm(true)}
         >
-          Break now
+          End Session
         </button>
         <button
           type="button"
@@ -86,6 +87,40 @@ export function Session() {
       </button>
 
       <HiddenOverlay active={hidden} onReveal={() => setHidden(false)} />
+
+      {showEndConfirm && (
+        <div
+          className="confirm-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="end-session-title"
+        >
+          <div className="confirm-dialog">
+            <h2 id="end-session-title" className="confirm-title">
+              End session?
+            </h2>
+            <p className="confirm-copy">
+              Are you sure you want to end this session now?
+            </p>
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowEndConfirm(false)}
+              >
+                Keep going
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => navigate('/break/check-in')}
+              >
+                End session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
