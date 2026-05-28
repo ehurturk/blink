@@ -1,30 +1,38 @@
 :root {
-  --bg: #f5f1ea;
-  --surface: #ffffff;
-  --text: #2c2a26;
-  --text-muted: #7b756b;
-  --border: #e8e0d2;
+  --bg: #faecd0;
+  --surface: #fff5de;
+  --surface-soft: #fbe9c9;
+  --text: #2b2419;
+  --text-muted: #87765f;
+  --border: #e6d6b5;
 
-  --accent: #5f7a5e;
-  --accent-strong: #4a6249;
-  --accent-soft: #e8efe5;
+  --accent: #aacde0;
+  --accent-strong: #7baac6;
+  --accent-soft: #cce0ee;
 
-  --good: #e5eedf;
-  --good-strong: #8fb18b;
-  --good-text: #3a5638;
+  --warm-chip: #f3d3ae;
+  --warm-chip-strong: #d9a872;
 
-  --meh: #f3e8cf;
-  --meh-strong: #d9b86f;
-  --meh-text: #6b5421;
+  --warn: #df8c8c;
+  --peach: #f2cb9d;
 
-  --sore: #f0d7d1;
-  --sore-strong: #c4827a;
+  --good: #dfeed3;
+  --good-strong: #93b68a;
+  --good-text: #3f5a38;
+
+  --meh: #f4e3c0;
+  --meh-strong: #cfae6d;
+  --meh-text: #6b541f;
+
+  --sore: #f1d6cf;
+  --sore-strong: #c68684;
   --sore-text: #6b3a30;
 
   --error: #b9534a;
 
   --radius-sm: 10px;
   --radius-md: 16px;
+  --radius-lg: 22px;
   --radius-pill: 999px;
 
   --sans:
@@ -69,8 +77,8 @@ h3 {
 }
 
 h1 {
-  font-size: 1.6rem;
-  line-height: 1.25;
+  font-size: 1.7rem;
+  line-height: 1.2;
 }
 
 p {
@@ -87,7 +95,7 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 fieldset {

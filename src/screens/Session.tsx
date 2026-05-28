@@ -30,23 +30,53 @@ const FLAG_COPY: Record<
 
 export function Session() {
   const navigate = useNavigate()
-  const { plannedStudyMs, strainFlags, toggleStrainFlag } = useApp()
+  const {
+    plannedStudyMs,
+    strainFlags,
+    toggleStrainFlag,
+    sessionStartedAt,
+    sessionPausedAt,
+    sessionTotalPausedMs,
+    togglePause,
+  } = useApp()
   const [elapsedMs, setElapsedMs] = useState(0)
-  const [paused, setPaused] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [pendingFlag, setPendingFlag] = useState<PendingFlag>(null)
 
-  useEffect(() => {
-    if (paused) return
-    const id = setInterval(() => setElapsedMs((e) => e + 1000), 1000)
-    return () => clearInterval(id)
-  }, [paused])
+  const paused = sessionPausedAt !== null
 
+  // If somebody lands here without an active session (URL nav, refresh), bail home.
   useEffect(() => {
-    if (elapsedMs >= plannedStudyMs) {
+    if (sessionStartedAt === null) {
+      navigate('/', { replace: true })
+    }
+  }, [sessionStartedAt, navigate])
+
+  // Drive elapsedMs from persisted timestamps so it survives navigation.
+  useEffect(() => {
+    const startedAt = sessionStartedAt
+    if (startedAt === null) return
+    function update() {
+      const now = Date.now()
+      const pauseAdjustment =
+        sessionTotalPausedMs +
+        (sessionPausedAt !== null ? now - sessionPausedAt : 0)
+      setElapsedMs(now - startedAt! - pauseAdjustment)
+    }
+    update()
+    if (sessionPausedAt !== null) return
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [sessionStartedAt, sessionPausedAt, sessionTotalPausedMs])
+
+  // Auto-advance to break check-in when the timer is up.
+  useEffect(() => {
+    if (sessionStartedAt !== null && elapsedMs >= plannedStudyMs) {
       navigate('/break/check-in', { replace: true })
     }
-  }, [elapsedMs, plannedStudyMs, navigate])
+  }, [elapsedMs, plannedStudyMs, navigate, sessionStartedAt])
+
+  if (sessionStartedAt === null) return null
 
   const progress = Math.min(1, elapsedMs / plannedStudyMs)
 
@@ -108,7 +138,7 @@ export function Session() {
         <button
           type="button"
           className="round-btn round-btn-soft"
-          onClick={() => setPaused((p) => !p)}
+          onClick={togglePause}
         >
           {paused ? 'Resume' : 'Pause'}
         </button>
@@ -116,7 +146,7 @@ export function Session() {
 
       <button
         type="button"
-        className="btn-secondary btn-hide"
+        className="btn-primary"
         onClick={() => setHidden(true)}
       >
         Hide

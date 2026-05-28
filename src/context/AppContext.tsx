@@ -33,7 +33,13 @@ type AppContextValue = {
   setCheckIn: (c: StrainCheckIn) => void
   chosenActivity: Activity | null
   setChosenActivity: (a: Activity) => void
+  // Persisted session timing
+  sessionStartedAt: number | null
+  sessionPausedAt: number | null
+  sessionTotalPausedMs: number
   beginSession: () => void
+  togglePause: () => void
+  endSession: () => void
   recordBreak: (outcome: BreakOutcome) => Promise<void>
   resetFlow: () => void
 }
@@ -54,6 +60,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   })
   const [checkIn, setCheckIn] = useState<StrainCheckIn | null>(null)
   const [chosenActivity, setChosenActivity] = useState<Activity | null>(null)
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
+  const [sessionPausedAt, setSessionPausedAt] = useState<number | null>(null)
+  const [sessionTotalPausedMs, setSessionTotalPausedMs] = useState(0)
 
   useEffect(() => {
     let ignore = false
@@ -84,9 +93,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setChosenActivity(null)
   }, [])
 
+  const endSession = useCallback(() => {
+    setSessionStartedAt(null)
+    setSessionPausedAt(null)
+    setSessionTotalPausedMs(0)
+  }, [])
+
   const beginSession = useCallback(() => {
     resetFlow()
+    setSessionStartedAt(Date.now())
+    setSessionPausedAt(null)
+    setSessionTotalPausedMs(0)
   }, [resetFlow])
+
+  const togglePause = useCallback(() => {
+    setSessionPausedAt((pausedAt) => {
+      if (pausedAt !== null) {
+        // resuming — add the pause duration onto the accumulator
+        setSessionTotalPausedMs((t) => t + (Date.now() - pausedAt))
+        return null
+      }
+      // pausing
+      return Date.now()
+    })
+  }, [])
 
   const recordBreak = useCallback(
     async ({ did, helped }: BreakOutcome) => {
@@ -101,8 +131,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       if (error) throw error
       resetFlow()
+      endSession()
     },
-    [checkIn, chosenActivity, resetFlow],
+    [checkIn, chosenActivity, resetFlow, endSession],
   )
 
   const value = useMemo<AppContextValue>(
@@ -120,7 +151,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCheckIn,
       chosenActivity,
       setChosenActivity,
+      sessionStartedAt,
+      sessionPausedAt,
+      sessionTotalPausedMs,
       beginSession,
+      togglePause,
+      endSession,
       recordBreak,
       resetFlow,
     }),
@@ -133,7 +169,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleStrainFlag,
       checkIn,
       chosenActivity,
+      sessionStartedAt,
+      sessionPausedAt,
+      sessionTotalPausedMs,
       beginSession,
+      togglePause,
+      endSession,
       recordBreak,
       resetFlow,
     ],

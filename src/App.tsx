@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
-import { AppShell, FocusShell } from './components/AppShell'
+import { AppShell } from './components/AppShell'
 import { Home } from './screens/Home'
 import { Session } from './screens/Session'
 import { BreakCheckIn } from './screens/BreakCheckIn'
@@ -18,8 +18,6 @@ function App() {
           <Route element={<AppShell />}>
             <Route path="/" element={<Home />} />
             <Route path="/stats" element={<Stats />} />
-          </Route>
-          <Route element={<FocusShell />}>
             <Route path="/session" element={<Session />} />
             <Route path="/break/check-in" element={<BreakCheckIn />} />
             <Route path="/break/pick" element={<BreakPick />} />
