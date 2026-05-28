@@ -2,8 +2,8 @@ import { useState } from 'react'
 import type {
   StrainCheckIn as StrainCheckInValue,
   StrainDimension,
-  StrainState,
 } from '../types'
+import { StrainSlider } from './StrainSlider'
 
 type Props = {
   onSubmit: (strain: StrainCheckInValue) => void
@@ -16,12 +16,6 @@ const DIMENSIONS: { key: StrainDimension; label: string }[] = [
   { key: 'eyes', label: 'Eyes' },
   { key: 'neck', label: 'Neck' },
   { key: 'mind', label: 'Mind' },
-]
-
-const STATES: { key: StrainState; label: string; emoji: string }[] = [
-  { key: 'good', label: 'Good', emoji: '🙂' },
-  { key: 'meh', label: 'Meh', emoji: '😐' },
-  { key: 'sore', label: 'Sore', emoji: '😣' },
 ]
 
 export function StrainCheckIn({
@@ -40,29 +34,12 @@ export function StrainCheckIn({
   return (
     <div className="strain">
       {DIMENSIONS.map(({ key, label }) => (
-        <fieldset key={key} className="feeling-row">
-          <legend className="feeling-label">{label}</legend>
-          <div className="feeling-options" role="radiogroup" aria-label={label}>
-            {STATES.map(({ key: s, label: sLabel, emoji }) => {
-              const selected = draft[key] === s
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  className={`feeling-card is-${s}${selected ? ' is-selected' : ''}`}
-                  onClick={() => setDraft((d) => ({ ...d, [key]: s }))}
-                >
-                  <span className="feeling-emoji" aria-hidden="true">
-                    {emoji}
-                  </span>
-                  <span className="feeling-name">{sLabel}</span>
-                </button>
-              )
-            })}
-          </div>
-        </fieldset>
+        <StrainSlider
+          key={key}
+          label={label}
+          value={draft[key]}
+          onChange={(v) => setDraft((d) => ({ ...d, [key]: v }))}
+        />
       ))}
 
       <button
