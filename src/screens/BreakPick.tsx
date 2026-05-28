@@ -47,6 +47,7 @@ export function BreakPick() {
   }
 
   function endDay() {
+    setShowEndDayConfirm(false)
     resetFlow()
     navigate('/', { replace: true })
   }
