@@ -7,34 +7,45 @@ import './App.css'
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
+interface Activity {
+  id: number;
+  name: string;
+  description: string | null;
+  helps_eyes: boolean;
+  helps_neck: boolean;
+  helps_mind: boolean;
+  screen_free: boolean;
+  icon: string | null;
+  created_at: string;
+}
+
 function App() {
   const [count, setCount] = useState(0)
-  const [suggestion, setSuggestion] = useState(null)
+
+  // 2. Tell TypeScript that suggestion can be an Activity OR null
+  const [suggestion, setSuggestion] = useState<Activity | null>(null)
 
   useEffect(() => {
-    // Flag to prevent state updates if the component unmounts before the fetch finishes
     let ignore = false;
 
     async function fetchSuggestion() {
+      // 3. (Optional but helpful) Tell Supabase what type of data to expect
       const { data: candidates, error } = await supabase
         .from('activities')
         .select('*')
-        .eq('helps_eyes', true);
-
+        .eq('helps_eyes', true).returns<Activity[]>();
       if (error) {
         console.error(error);
         return;
       }
 
-      // Only update state if the component is still mounted
-      if (!ignore) {
+      if (!ignore && candidates && candidates.length > 0) {
         setSuggestion(candidates[Math.floor(Math.random() * candidates.length)]);
       }
     }
 
     fetchSuggestion();
 
-    // Cleanup function
     return () => {
       ignore = true;
     };
@@ -54,7 +65,18 @@ function App() {
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
           </p>
-          <p>Suggestion is: {suggestion?.name ?? 'loading...'}</p>
+          <p>Suggestion is: {suggestion && (
+            <div className="suggestion-card">
+              <h2>{suggestion.icon} {suggestion.name}</h2>
+              <p>{suggestion.description}</p>
+
+              <div className="tags">
+                {suggestion.helps_eyes && <span>👀 Good for Eyes</span>}
+                {suggestion.helps_neck && <span>🦒 Good for Neck</span>}
+                {suggestion.screen_free && <span>🚫 No Screens</span>}
+              </div>
+            </div>
+          )}</p>
         </div>
         <button
           type="button"
