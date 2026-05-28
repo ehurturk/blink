@@ -1,4 +1,4 @@
-name: CI
+name: cicd
 
 on:
   pull_request:
@@ -61,9 +61,28 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
-      # - name: Upload a Build Artifact
-      #   uses: actions/upload-artifact@v7.0.1
-      #   with:
-      #     name: dist
-      #     path: dist/
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: dist
+          path: dist/
+
+  deploy:
+    needs: [lint, typecheck, build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          name: dist
+          path: dist/
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ./dist --project-name=blink
