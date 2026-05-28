@@ -26,3 +26,18 @@ export type Break = {
   helped: boolean | null
   created_at: string
 }
+
+export type SessionStrainFlags = {
+  eyes: boolean
+  neck: boolean
+}
+
+export type MockUser = {
+  name: string
+  contacts: string[]
+  pet: string | null
+  spots: string[]
+  hobbies: string[]
+  favoriteActivityIds: number[]
+  somethingNewIds: number[]
+}

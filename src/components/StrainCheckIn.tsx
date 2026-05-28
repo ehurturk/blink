@@ -7,6 +7,8 @@ import type {
 
 type Props = {
   onSubmit: (strain: StrainCheckInValue) => void
+  initial?: Partial<StrainCheckInValue>
+  ctaLabel?: string
   disabled?: boolean
 }
 
@@ -22,8 +24,13 @@ const STATES: { key: StrainState; label: string }[] = [
   { key: 'sore', label: 'Sore' },
 ]
 
-export function StrainCheckIn({ onSubmit, disabled }: Props) {
-  const [draft, setDraft] = useState<Partial<StrainCheckInValue>>({})
+export function StrainCheckIn({
+  onSubmit,
+  initial,
+  ctaLabel = 'Find me a break',
+  disabled,
+}: Props) {
+  const [draft, setDraft] = useState<Partial<StrainCheckInValue>>(initial ?? {})
 
   const complete =
     draft.eyes !== undefined &&
@@ -32,11 +39,6 @@ export function StrainCheckIn({ onSubmit, disabled }: Props) {
 
   return (
     <div className="strain">
-      <header className="page-head">
-        <h1>How are you feeling?</h1>
-        <p className="subtle">Tap one for each. We'll suggest a break.</p>
-      </header>
-
       {DIMENSIONS.map(({ key, label }) => (
         <fieldset key={key} className="strain-row">
           <legend className="strain-label">{label}</legend>
@@ -66,7 +68,7 @@ export function StrainCheckIn({ onSubmit, disabled }: Props) {
         disabled={!complete || disabled}
         onClick={() => complete && onSubmit(draft as StrainCheckInValue)}
       >
-        {disabled ? 'Thinking…' : 'Suggest a break'}
+        {disabled ? 'One moment…' : ctaLabel}
       </button>
     </div>
   )
