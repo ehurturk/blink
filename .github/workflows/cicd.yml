@@ -43,8 +43,26 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
   build:
-    needs: [lint, typecheck]
+    needs: [lint, typecheck, test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -72,7 +90,7 @@ jobs:
           path: dist/
 
   deploy:
-    needs: [lint, typecheck, build]
+    needs: [lint, typecheck, test, build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
