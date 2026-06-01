@@ -15,9 +15,11 @@ const GRADIENTS: Record<string, Stops> = {
 
 const FALLBACK: Stops = ['#EADFCB', '#C3B49A']
 
-export function gradientFor(activityName: string): string {
+// Native: returns the two gradient stops for <LinearGradient colors={...}>.
+// (The web build returned a CSS `linear-gradient(...)` string instead.)
+export function gradientColorsFor(activityName: string): [string, string] {
   const [a, b] = GRADIENTS[activityName] ?? FALLBACK
-  return `linear-gradient(155deg, ${a}, ${b})`
+  return [a, b]
 }
 
 export function rationaleFor(
@@ -30,11 +32,7 @@ export function rationaleFor(
     return 'Loosen up your neck.'
   if (strain.mind === 'sore' && activity.helps_mind)
     return 'A reset for your head.'
-  if (
-    strain.eyes === 'meh' ||
-    strain.neck === 'meh' ||
-    strain.mind === 'meh'
-  )
+  if (strain.eyes === 'meh' || strain.neck === 'meh' || strain.mind === 'meh')
     return 'A gentle reset.'
   return 'A moment for yourself.'
 }

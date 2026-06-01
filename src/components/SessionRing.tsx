@@ -1,4 +1,7 @@
-import type { ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { StyleSheet, View } from 'react-native'
+import Svg, { Circle, G } from 'react-native-svg'
+import { colors } from '../theme'
 
 type Props = {
   /** 0 to 1 */
@@ -25,52 +28,61 @@ export function SessionRing({
   const cx = size / 2
 
   return (
-    <div className="ring" style={{ width: size, height: size }}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        aria-hidden="true"
-      >
-        <circle
+    <View style={[styles.ring, { width: size, height: size }]}>
+      <Svg width={size} height={size}>
+        <Circle
           cx={cx}
           cy={cx}
           r={r}
           fill="none"
-          stroke="var(--border)"
+          stroke={colors.border}
           strokeWidth={stroke}
         />
-        {q > 0 && (
-          <circle
-            cx={cx}
-            cy={cx}
-            r={r}
-            fill="none"
-            stroke="var(--meh-strong)"
-            strokeWidth={stroke}
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - p - q)}
-            strokeLinecap="butt"
-            transform={`rotate(-90 ${cx} ${cx})`}
-            opacity={0.85}
-          />
-        )}
-        {p > 0 && (
-          <circle
-            cx={cx}
-            cy={cx}
-            r={r}
-            fill="none"
-            stroke="var(--accent)"
-            strokeWidth={stroke}
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - p)}
-            strokeLinecap="round"
-            transform={`rotate(-90 ${cx} ${cx})`}
-          />
-        )}
-      </svg>
-      <div className="ring-center">{children}</div>
-    </div>
+        <G rotation={-90} origin={`${cx}, ${cx}`}>
+          {q > 0 && (
+            <Circle
+              cx={cx}
+              cy={cx}
+              r={r}
+              fill="none"
+              stroke={colors.mehStrong}
+              strokeWidth={stroke}
+              strokeDasharray={[c, c]}
+              strokeDashoffset={c * (1 - p - q)}
+              strokeLinecap="butt"
+              opacity={0.85}
+            />
+          )}
+          {p > 0 && (
+            <Circle
+              cx={cx}
+              cy={cx}
+              r={r}
+              fill="none"
+              stroke={colors.accent}
+              strokeWidth={stroke}
+              strokeDasharray={[c, c]}
+              strokeDashoffset={c * (1 - p)}
+              strokeLinecap="round"
+            />
+          )}
+        </G>
+      </Svg>
+      <View style={styles.center}>{children}</View>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  ring: { alignItems: 'center', justifyContent: 'center' },
+  center: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+})

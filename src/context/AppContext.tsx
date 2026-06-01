@@ -62,9 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     neck: false,
   })
   const [checkIn, setCheckIn] = useState<StrainCheckIn | null>(null)
-  const [chosenActivity, setChosenActivityRaw] = useState<Activity | null>(
-    null,
-  )
+  const [chosenActivity, setChosenActivityRaw] = useState<Activity | null>(null)
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
   const [sessionPausedAt, setSessionPausedAt] = useState<number | null>(null)
   const [sessionTotalPausedMs, setSessionTotalPausedMs] = useState(0)
@@ -235,14 +233,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useApp(): AppContextValue {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error('useApp must be used inside <AppProvider>')
   return ctx
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function strainFlagsToCheckIn(
   flags: SessionStrainFlags,
 ): Partial<Record<StrainDimension, 'sore'>> {

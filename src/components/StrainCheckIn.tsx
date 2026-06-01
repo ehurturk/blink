@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { StyleSheet, View } from 'react-native'
 import type {
   StrainCheckIn as StrainCheckInValue,
   StrainDimension,
 } from '../types'
+import { Button } from './Button'
 import { StrainSlider } from './StrainSlider'
 
 type Props = {
@@ -32,7 +34,7 @@ export function StrainCheckIn({
     draft.mind !== undefined
 
   return (
-    <div className="strain">
+    <View style={styles.strain}>
       {DIMENSIONS.map(({ key, label }) => (
         <StrainSlider
           key={key}
@@ -42,14 +44,15 @@ export function StrainCheckIn({
         />
       ))}
 
-      <button
-        type="button"
-        className="btn-primary"
+      <Button
+        label={disabled ? 'One moment…' : ctaLabel}
         disabled={!complete || disabled}
-        onClick={() => complete && onSubmit(draft as StrainCheckInValue)}
-      >
-        {disabled ? 'One moment…' : ctaLabel}
-      </button>
-    </div>
+        onPress={() => complete && onSubmit(draft as StrainCheckInValue)}
+      />
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  strain: { gap: 14 },
+})

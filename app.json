@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "blink-app",
-    "slug": "blink-app",
+    "name": "blink",
+    "slug": "blink",
     "version": "1.0.0",
     "scheme": "blink",
     "orientation": "portrait",

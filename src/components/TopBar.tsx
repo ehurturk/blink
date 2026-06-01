@@ -1,56 +1,78 @@
-import { Link, useLocation } from 'react-router-dom'
+import { usePathname, useRouter } from 'expo-router'
+import { Pressable, StyleSheet, View } from 'react-native'
+import Svg, { Circle, Path } from 'react-native-svg'
+import { colors } from '../theme'
 
-const ProfileIcon = (
-  <svg
-    viewBox="0 0 24 24"
-    width="24"
-    height="24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="8" r="4" />
-    <path d="M4 21c0-4.418 3.582-8 8-8s8 3.582 8 8" />
-  </svg>
-)
-
-const BackIcon = (
-  <svg
-    viewBox="0 0 24 24"
-    width="24"
-    height="24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M15 18l-6-6 6-6" />
-  </svg>
-)
-
-export function TopBar() {
-  const { pathname } = useLocation()
-  const onStats = pathname === '/stats'
+function ProfileIcon() {
   return (
-    <header className="topbar">
-      {onStats ? (
-        <Link to="/" className="topbar-icon" aria-label="Home">
-          {BackIcon}
-        </Link>
-      ) : (
-        <Link
-          to="/stats"
-          className="topbar-icon"
-          aria-label="Your activity"
-        >
-          {ProfileIcon}
-        </Link>
-      )}
-    </header>
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle
+        cx={12}
+        cy={8}
+        r={4}
+        stroke={colors.text}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M4 21c0-4.418 3.582-8 8-8s8 3.582 8 8"
+        stroke={colors.text}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   )
 }
+
+function BackIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 18l-6-6 6-6"
+        stroke={colors.text}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+export function TopBar() {
+  const pathname = usePathname()
+  const router = useRouter()
+  const onStats = pathname === '/stats'
+
+  return (
+    <View style={styles.bar}>
+      <Pressable
+        onPress={() => (onStats ? router.replace('/') : router.push('/stats'))}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={onStats ? 'Home' : 'Your activity'}
+        style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+      >
+        {onStats ? <BackIcon /> : <ProfileIcon />}
+      </Pressable>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  bar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    minHeight: 40,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { backgroundColor: 'rgba(0,0,0,0.05)' },
+})

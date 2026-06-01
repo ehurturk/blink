@@ -1,5 +1,8 @@
+import { LinearGradient } from 'expo-linear-gradient'
+import { Pressable, StyleSheet, Text } from 'react-native'
+import { gradientColorsFor } from '../lib/visual'
+import { colors, softShadow } from '../theme'
 import type { Activity } from '../types'
-import { gradientFor } from '../lib/visual'
 
 type Props = {
   activity: Activity
@@ -8,16 +11,34 @@ type Props = {
 
 export function ActivityTile({ activity, onSelect }: Props) {
   return (
-    <button
-      type="button"
-      className="activity-tile"
-      style={{ backgroundImage: gradientFor(activity.name) }}
-      onClick={() => onSelect(activity)}
+    <Pressable
+      onPress={() => onSelect(activity)}
+      style={({ pressed }) => [styles.wrap, pressed && styles.pressed]}
     >
-      <span className="tile-emoji" aria-hidden="true">
-        {activity.icon ?? '✨'}
-      </span>
-      <span className="tile-name">{activity.name}</span>
-    </button>
+      <LinearGradient
+        colors={gradientColorsFor(activity.name)}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.tile}
+      >
+        <Text style={styles.emoji}>{activity.icon ?? '✨'}</Text>
+        <Text style={styles.name}>{activity.name}</Text>
+      </LinearGradient>
+    </Pressable>
   )
 }
+
+const styles = StyleSheet.create({
+  wrap: { ...softShadow, borderRadius: 18 },
+  pressed: { transform: [{ scale: 0.97 }] },
+  tile: {
+    width: 152,
+    height: 170,
+    borderRadius: 18,
+    padding: 14,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  emoji: { fontSize: 32, lineHeight: 36 },
+  name: { fontSize: 15, fontWeight: '600', color: colors.text },
+})
